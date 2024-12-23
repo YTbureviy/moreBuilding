@@ -115,7 +115,7 @@ namespace DI
 
             _registrations[key] = new DIRegistration
             {
-                Factory = (factory) => factory,
+                Factory = (DIContainer container) => factory(container),
                 IsSingleton = isSingleton,
             };
         }
