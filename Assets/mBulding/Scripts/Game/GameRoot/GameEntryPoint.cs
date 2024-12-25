@@ -8,7 +8,7 @@ namespace mBuilding.Scripts
     {
         private static GameEntryPoint _instance;
         private Coroutines _coroutines;
-        private UIRootView _uiRootView;
+        private UIRootView _uiRoot;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         public static void AutostartGame()
@@ -23,8 +23,8 @@ namespace mBuilding.Scripts
             Object.DontDestroyOnLoad(_coroutines.gameObject);
 
             var prefabUIRoot = Resources.Load<UIRootView>("UIRoot");
-            _uiRootView = Object.Instantiate(prefabUIRoot);
-            Object.DontDestroyOnLoad(_uiRootView.gameObject);
+            _uiRoot = Object.Instantiate(prefabUIRoot);
+            Object.DontDestroyOnLoad(_uiRoot.gameObject);
         }
 
         private void RunGame()
@@ -38,6 +38,11 @@ namespace mBuilding.Scripts
                 return;
             }
 
+            if (sceneName == Scenes.MAIN_MENU)
+            {
+                _coroutines.StartCoroutine(LoadAndStartMainMenu());
+            }
+
             if (sceneName != "Boot")
             {
                 return;
@@ -48,16 +53,40 @@ namespace mBuilding.Scripts
 
         private IEnumerator LoadAndStartGameplay()
         {
-            _uiRootView.ShowLoadingScreen();
+            _uiRoot.ShowLoadingScreen();
 
             yield return LoadScene(Scenes.BOOT);
             yield return LoadScene(Scenes.GAMEPLAY);
             yield return new WaitForSeconds(3.0f); // show loading screen
 
             var sceneEntryPoint = Object.FindObjectOfType<GameplayEntryPoint>();
-            sceneEntryPoint.Run();
+            sceneEntryPoint.Run(_uiRoot);
 
-            _uiRootView.HideLoadingScreen();
+            sceneEntryPoint.GoToMainMenuSceneRequested += () =>
+            {
+                _coroutines.StartCoroutine(LoadAndStartMainMenu());
+            };
+
+            _uiRoot.HideLoadingScreen();
+        }
+
+        private IEnumerator LoadAndStartMainMenu()
+        {
+            _uiRoot.ShowLoadingScreen();
+
+            yield return LoadScene(Scenes.BOOT);
+            yield return LoadScene(Scenes.MAIN_MENU);
+            yield return new WaitForSeconds(3.0f); // show loading screen
+
+            var sceneEntryPoint = Object.FindObjectOfType<MainMenuEntryPoint>();
+            sceneEntryPoint.Run(_uiRoot);
+
+            sceneEntryPoint.GoToGameplaySceneRequested += () =>
+            {
+                _coroutines.StartCoroutine(LoadAndStartGameplay());
+            };
+
+            _uiRoot.HideLoadingScreen();
         }
 
         private IEnumerator LoadScene(string sceneName)
