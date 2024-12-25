@@ -1,6 +1,6 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace mBuilding.Scripts
 {
@@ -29,7 +29,40 @@ namespace mBuilding.Scripts
 
         private void RunGame()
         {
-            //
+#if UNITY_EDITOR
+            var sceneName = SceneManager.GetActiveScene().name;
+
+            if (sceneName == "Gameplay")
+            {
+                _coroutines.StartCoroutine(LoadAndStartGameplay());
+                return;
+            }
+
+            if (sceneName != "Boot")
+            {
+                return;
+            }
+#endif
+            _coroutines.StartCoroutine(LoadAndStartGameplay());
+        }
+
+        private IEnumerator LoadAndStartGameplay()
+        {
+            _uiRootView.ShowLoadingScreen();
+
+            yield return LoadScene(Scenes.BOOT);
+            yield return LoadScene(Scenes.GAMEPLAY);
+            yield return new WaitForSeconds(3.0f); // show loading screen
+
+            var sceneEntryPoint = Object.FindObjectOfType<GameplayEntryPoint>();
+            sceneEntryPoint.Run();
+
+            _uiRootView.HideLoadingScreen();
+        }
+
+        private IEnumerator LoadScene(string sceneName)
+        {
+            yield return SceneManager.LoadSceneAsync(sceneName);
         }
     }
 }
