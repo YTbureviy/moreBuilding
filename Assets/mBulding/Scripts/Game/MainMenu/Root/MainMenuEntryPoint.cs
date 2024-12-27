@@ -1,22 +1,27 @@
-using System.Collections;
-using System.Collections.Generic;
+
 using UnityEngine;
-using System;
+using R3;
 
 public class MainMenuEntryPoint : MonoBehaviour
 {
-    public event Action GoToGameplaySceneRequested;
-
     [SerializeField] private UIMainMenuRootBinder _sceneUIRootPrefab;
 
-    public void Run(UIRootView uiRoot)
+    public Observable<MainMenuExitParams> Run(UIRootView uiRoot, MainMenuEnterParams enterParams)
     {
         var uiScene = Instantiate(_sceneUIRootPrefab);
         uiRoot.AttachSceneUI(uiScene.gameObject);
 
-        uiScene.GoToGameplayButtonClicked += () =>
-        {
-            GoToGameplaySceneRequested?.Invoke();
-        };
+        var exitSignalSubj = new Subject<Unit>();
+        uiScene.Bind(exitSignalSubj);
+
+        Debug.Log($"Main Menu Entry Point: Results {enterParams?.Result}");
+
+        var saveFileName = "ololo save";
+        var levelNumber = UnityEngine.Random.Range(0, 300);
+        var gameplayEnterParams = new GameplayEnterParams(saveFileName, levelNumber);
+        var mainMenuExitParams = new MainMenuExitParams(gameplayEnterParams);
+        var exitToGameplaySceneSignal = exitSignalSubj.Select(_ => mainMenuExitParams);
+
+        return exitToGameplaySceneSignal;
     }
 }

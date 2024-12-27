@@ -1,3 +1,4 @@
+using R3;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -34,7 +35,8 @@ namespace mBuilding.Scripts
 
             if (sceneName == "Gameplay")
             {
-                _coroutines.StartCoroutine(LoadAndStartGameplay());
+                var enterParams = new GameplayEnterParams("empty.save", 0);
+                _coroutines.StartCoroutine(LoadAndStartGameplay(enterParams));
                 return;
             }
 
@@ -48,43 +50,45 @@ namespace mBuilding.Scripts
                 return;
             }
 #endif
-            _coroutines.StartCoroutine(LoadAndStartGameplay());
+            _coroutines.StartCoroutine(LoadAndStartMainMenu());
         }
 
-        private IEnumerator LoadAndStartGameplay()
+        private IEnumerator LoadAndStartGameplay(GameplayEnterParams enterParams = null)
         {
             _uiRoot.ShowLoadingScreen();
 
             yield return LoadScene(Scenes.BOOT);
             yield return LoadScene(Scenes.GAMEPLAY);
-            yield return new WaitForSeconds(3.0f); // show loading screen
+            yield return new WaitForSeconds(1.0f); // show loading screen
 
             var sceneEntryPoint = Object.FindObjectOfType<GameplayEntryPoint>();
-            sceneEntryPoint.Run(_uiRoot);
-
-            sceneEntryPoint.GoToMainMenuSceneRequested += () =>
+            sceneEntryPoint.Run(_uiRoot, enterParams).Subscribe(gamepalyExitParams => 
             {
-                _coroutines.StartCoroutine(LoadAndStartMainMenu());
-            };
+                _coroutines.StartCoroutine(
+                    LoadAndStartMainMenu(gamepalyExitParams.MainMenuEnterParems));
+            });
 
             _uiRoot.HideLoadingScreen();
         }
 
-        private IEnumerator LoadAndStartMainMenu()
+        private IEnumerator LoadAndStartMainMenu(MainMenuEnterParams enterParams = null)
         {
             _uiRoot.ShowLoadingScreen();
 
             yield return LoadScene(Scenes.BOOT);
             yield return LoadScene(Scenes.MAIN_MENU);
-            yield return new WaitForSeconds(3.0f); // show loading screen
+            yield return new WaitForSeconds(1.0f); // show loading screen
 
             var sceneEntryPoint = Object.FindObjectOfType<MainMenuEntryPoint>();
-            sceneEntryPoint.Run(_uiRoot);
-
-            sceneEntryPoint.GoToGameplaySceneRequested += () =>
+            sceneEntryPoint.Run(_uiRoot, enterParams).Subscribe(mainMenuExitParams => 
             {
-                _coroutines.StartCoroutine(LoadAndStartGameplay());
-            };
+                var targetSceneName = mainMenuExitParams.TargetSceneEnterParems.SceneName;
+
+                if (targetSceneName == Scenes.GAMEPLAY)
+                {
+                    _coroutines.StartCoroutine(LoadAndStartGameplay(mainMenuExitParams.TargetSceneEnterParems.As<GameplayEnterParams>()));
+                }
+            });
 
             _uiRoot.HideLoadingScreen();
         }

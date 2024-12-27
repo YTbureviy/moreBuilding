@@ -2,13 +2,19 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using R3;
 
 public class UIGameplayRootBinder : MonoBehaviour
 {
-    public event Action GoToMainMenuButtonClicked;
+    private Subject<Unit> _exitSceneSignalSub;
 
     public void HandleGoToMainMenuButtonClick()
     {
-        GoToMainMenuButtonClicked?.Invoke();
+        _exitSceneSignalSub?.OnNext(Unit.Default);
+    }
+
+    public void Bind(Subject<Unit> exitSceneSignalSub)
+    {
+        _exitSceneSignalSub = exitSceneSignalSub;
     }
 }
