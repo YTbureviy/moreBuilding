@@ -1,13 +1,21 @@
 
 using UnityEngine;
 using R3;
+using BaCon;
+using Assets.mBulding.Scripts.Game.MainMenu.Root;
+using Assets.mBulding.Scripts.Game.MainMenu.Root.View;
 
 public class MainMenuEntryPoint : MonoBehaviour
 {
     [SerializeField] private UIMainMenuRootBinder _sceneUIRootPrefab;
 
-    public Observable<MainMenuExitParams> Run(UIRootView uiRoot, MainMenuEnterParams enterParams)
+    public Observable<MainMenuExitParams> Run(DIContainer container, MainMenuEnterParams enterParams)
     {
+        MainMenuRagistrations.Registre(container, enterParams);
+        var mainMenuViewModelsContainer = new DIContainer(container);
+        MainMenuViewModelsRegistrations.Registre(mainMenuViewModelsContainer);
+
+        var uiRoot = container.Resolve<UIRootView>();
         var uiScene = Instantiate(_sceneUIRootPrefab);
         uiRoot.AttachSceneUI(uiScene.gameObject);
 
