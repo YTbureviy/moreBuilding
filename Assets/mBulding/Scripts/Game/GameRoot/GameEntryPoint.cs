@@ -1,6 +1,8 @@
-﻿using BaCon;
+﻿using Assets.mBulding.Scripts.Game.State;
+using BaCon;
 using R3;
 using System.Collections;
+using System.ComponentModel.DataAnnotations;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -30,6 +32,10 @@ namespace mBuilding.Scripts
             _uiRoot = Object.Instantiate(prefabUIRoot);
             Object.DontDestroyOnLoad(_uiRoot.gameObject);
             _rootContainer.RegisterInstance<UIRootView>(_uiRoot);
+
+            var gameStateProvider = new PlayerPrefsGameStateProvider();
+            _rootContainer.RegisterInstance<IGameStateProvider>(gameStateProvider);
+
             _rootContainer.RegisterFactory(_ => new SomeCommonService()).AsSingle();
         }
 
@@ -66,6 +72,10 @@ namespace mBuilding.Scripts
             yield return LoadScene(Scenes.BOOT);
             yield return LoadScene(Scenes.GAMEPLAY);
             yield return new WaitForSeconds(1.0f); // show loading screen
+
+            var isGameStateLoaded = false;
+            _rootContainer.Resolve<IGameStateProvider>().LoadGameState().Subscribe(_ => isGameStateLoaded = true);
+            yield return new WaitUntil(() => isGameStateLoaded);
 
             var sceneContainer = new DIContainer(_rootContainer);
             _cachedSceneContariner = sceneContainer;
